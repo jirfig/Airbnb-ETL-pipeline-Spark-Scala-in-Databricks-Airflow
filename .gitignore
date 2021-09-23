@@ -1,0 +1,9 @@
+target/
+.ipynb_checkpoints
+.*/
+_old
+data/
+/config
+!prj_cfg*template
+/project
+
