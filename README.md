@@ -11,7 +11,7 @@ This project is an extension to [Airbnb ETL pipeline: Spark on EMR, Redshift & A
 - [Dimensional model](#dimensional-model)
 - [Source data](#source-data)
 - [ETL pipeline](#etl-pipeline)
-- [Exploring the data](#exploring-the-data)
+- [Exploring the data with Databricks SQL](#exploring-the-data-with-Databricks-SQL)
 
 
 ## Dimensional model
@@ -76,7 +76,7 @@ Use [get_original_data.ipynb](get_original_data.ipynb) to download the data.
 
 ## ETL pipeline
 
-ETL comprises two parts
+ETL comprises two parts:
 - Part I: preprocess raw data into parquet files
 - Part II: create or update dimensional model using the preprocessed data
 
@@ -87,31 +87,13 @@ In Part II Spark reads preprocessed parquet files and transforms them into the f
 
 ![ef7b77807ea5cec5093eb96b123742eb.png](/docs/part2.png)
 
-### Apache Airflow
-The entire ETL is orchestrated by Apache Airflow
+There are two ways how to run the ETL: using Databricks notebooks or using Airflow, both on Azure Databricks.
 
 Source data of Airbnb listings and reviews are available in packages updated every month. The ETL is scheduled to run every month, pickup data from folder labeled by relevant month and use it to create dimensional model either from scratch if none exists or update existing one. The source data include January, February and March 2021 data and are run with backfill.
 
 The ETL is designed robustly and if new data in the same format are provided then it can continue updating the dimensional model *forever*.
 
-Here are some of the most interesting features used:
-- backfill - processing data in batches labeled by execution date
-- parallel tasks
-- DatabricksSubmitRunOperator to run Spark Jar jobs in Databricks
-
-![](docs/dag_complete.png)
-
-
-### Spark in Databricks
-The ETL is executed automatically by Airflow, but it can also be run interactively in notebooks, in both cases on Azure Databricks.
-
-Databricks notebook [etl_notebooks/Airbnb-etl-notebook.scala](etl_notebooks/Airbnb-etl-notebook.scala) can be uploaded to Databricks and directly executed cell-by-cell.
-							
-Airflow uses DatabricksSubmitRunOperator to create job clusters. Each step is executed by calling a Scala class in compiled jar.
-
- that contains identical code as implemented in [etl_notebooks/Airbnb-etl-notebook.scala](etl_notebooks/Airbnb-etl-notebook.scala). Source code is stored in  however it is split into five files stored in [apps](/apps) folder.
-Each .py file is run using spark-submit with execution date passed as argument to allow updating the dimensional model on monthly basis, exactly the frequency source data are available in.
-
+Spark jar jobs are submitted using DatabricksSubmitRunOperator. There is one jar with five classes, each class is called to execute one task. The jar is compiled using sbt on Scala source code, see [scala/](scala). Example use case:
 ```
 process_reviews_submit = DatabricksSubmitRunOperator(
     task_id = 'process_reviews_submit',
@@ -123,25 +105,25 @@ process_reviews_submit = DatabricksSubmitRunOperator(
                {"maven": {"coordinates": "com.johnsnowlabs.nlp:spark-nlp_2.12:3.2.2"}}], 
     dag=dag
 )
-
 ```
 
+![](docs/dag_complete.png)
 
-
-
+Alternatively, Databricks notebook [etl_notebooks/Airbnb-etl-notebook.scala](etl_notebooks/Airbnb-etl-notebook.scala) can be uploaded to Databricks and directly executed cell-by-cell. It contains identical code as in [scala/](scala), but requires manual execution, scheduling and verification of results.
+							
 Example runtime:
 - Creating dimensional model from scratch using January 2021 monthly data.
-- Master: 1x Standard_DS3_v2
+- Driver: 1x Standard_DS3_v2
 - Worker: 1-9x Standard_DS3_v2, autoscaled by databricks
 - Configuration: managed by databricks
 
 | Step| Runtime|
 |--|--|
-|preprocess_data		|6 min|	
-|process_listings_hosts		|2 min|	
-|process_weather_submit		|2 min	|
-|process_reviews_submit		|90 min	|
-|process_reviewers_submit	|2 min	|
+|preprocess_data		|~6 min|	
+|process_listings_hosts		|~2 min|	
+|process_weather_submit		|~2 min	|
+|process_reviews_submit		|~90 min|
+|process_reviewers_submit	|~2 min	|
 
 
 ## How to run the project
