@@ -81,6 +81,7 @@ ETL comprises two parts:
 - Part II: create or update dimensional model using the preprocessed data
 
 In Part I raw data stored in csv and txt files are read using Apache Spark and with minimal transformation saved into parquet files, columnar format more suitable for fast reads. Minimal transformations include dropping columns, removing multiline headers from txt files and extracting city name from filepath of the data.
+
 ![aad4c993d14a3bac915ec1f0c94b0fec.png](/docs/part1.png)
 
 In Part II Spark reads preprocessed parquet files and transforms them into the final dimensional model tables in csv format. Transformations performed include: joining tables using join and union operations, filtering using window functions, and dropping duplicates. Natural language processing models from Spark-NLP library is used for language detection of Airbnb reviews and sentiment analysis is performed on the english subset of the comments.
@@ -93,8 +94,8 @@ Source data of Airbnb listings and reviews are available in packages updated eve
 
 The ETL is designed robustly and if new data in the same format are provided then it can continue updating the dimensional model *forever*.
 
-Spark jar jobs are submitted using DatabricksSubmitRunOperator. There is one jar with five classes, each class is called to execute one task. The jar is compiled using sbt on Scala source code, see [scala/](scala). Example use case:
-```
+Spark jar jobs are submitted using DatabricksSubmitRunOperator. There is one jar with five classes, each class is called to execute one task. The jar is compiled using sbt on Scala source code, see [`scala/`](scala). Example use case:
+```python
 process_reviews_submit = DatabricksSubmitRunOperator(
     task_id = 'process_reviews_submit',
     databricks_conn_id = 'databricks_default',
@@ -109,9 +110,9 @@ process_reviews_submit = DatabricksSubmitRunOperator(
 
 ![](docs/dag_complete.png)
 
-Alternatively, Databricks notebook [etl_notebooks/Airbnb-etl-notebook.scala](etl_notebooks/Airbnb-etl-notebook.scala) can be uploaded to Databricks and directly executed cell-by-cell. It contains identical code as in [scala/](scala), but requires manual execution, scheduling and verification of results.
+Alternatively, Databricks notebook [`etl_notebooks/Airbnb-etl-notebook.scala`](etl_notebooks/Airbnb-etl-notebook.scala) can be uploaded to Databricks and directly executed cell-by-cell. It contains identical code as in [`scala/`](scala), but requires manual execution, scheduling and verification of results.
 							
-Example runtime:
+### Example runtime:
 - Creating dimensional model from scratch using January 2021 monthly data.
 - Driver: 1x Standard_DS3_v2
 - Worker: 1-9x Standard_DS3_v2, autoscaled by databricks
@@ -127,38 +128,36 @@ Example runtime:
 
 
 ## How to run the project
-1. Download source data using [get_original_data.ipynb]/(get_original_data.ipynb)
+1. Download source data using [`get_original_data.ipynb`](get_original_data.ipynb)
 2. Create Azure storage account and get a connection string.
-3. Edit "config/prj.cfg_template" to insert Azure storage account connection string and save it as "config/prj.cfg"
-4. Create new containers in Azure Blob Storage and upload raw data using [file_operations_azure_blob_storage.ipynb]/(file_operations_azure_blob_storage.ipynb)
+3. Edit [`config/prj_cfg.txt.template`](config/prj_cfg.txt.template) to insert Azure storage account connection string and save it as `config/prj_cfg.txt`
+4. Create new containers in Azure Blob Storage and upload raw data using [`file_operations_azure_blob_storage.ipynb`](file_operations_azure_blob_storage.ipynb)
 
 Local jupyter notebooks are tested with Python 3.8.5 and azure-storage-blob 12.8.1.
 
-There are two ways how to run the ETL, using databricks notebooks and using airflow.
+There are two ways how to run the ETL, using Databricks notebook or using Airflow.
 
 ### 1. Databricks notebook
 1. From Azure storage account get an access key and connection string
 
-2. Create Secret Scope and put two secrets in: azure storage account access key and connection string. To do that use e.g. Databricks CLI in local terminal. This requires Databricks access token to setup. The secrets are used to connect Azure blob storage to databricks: 
+2. Create Secret Scope and put two secrets in: azure storage account access key and connection string. To do that use e.g. Databricks CLI in local terminal. This requires Databricks access token to setup. The secrets are used to connect Azure blob storage to Databricks: 
 ```
 dbutils.secrets.get(scope = <scope_name>, key = <key>)
 ```
 
-3. Create All-purpose cluster and install the following libraries:
-- com.johnsnowlabs.nlp:spark-nlp_2.12:3.2.2 (necessary to run language detection and sentiment analysis)
-- azure-storage-blob (necessary to move files between Azure containers)
+3. Create all-purpose cluster and install the following libraries:
+- `com.johnsnowlabs.nlp:spark-nlp_2.12:3.2.2` (necessary to run language detection and sentiment analysis)
+- `azure-storage-blob` (necessary to move files between Azure containers)
 
-4. Import the Scala source notebooks to Databricks and run interactively:
-- [etl_notebooks/Airbnb-etl-notebook.scala](etl_notebooks/Airbnb-etl-notebook.scala)
-- [etl_notebooks/Airbnb-test-notebook.scala](etl_notebooks/Airbnb-test-notebook.scala)
+4. Import the Scala source notebooks to Databricks and run interactively [`etl_notebooks/Airbnb-etl-notebook.scala`](etl_notebooks/Airbnb-etl-notebook.scala) and test the results using [`etl_notebooks/Airbnb-test-notebook.scala`](etl_notebooks/Airbnb-test-notebook.scala)
 
 
 ### 2. Airflow
-Works with Python 3.8.5, Airflow 2.1.3 with two provider packages: databricks and microsoft-azure. Airflow uses LocalExecutor with Postgres 9.6. 
+Works with Python 3.8.5, Airflow 2.1.3 with two provider packages: `databricks` and `microsoft-azure`. Airflow uses LocalExecutor with Postgres 9.6. 
 
-1. Edit "config/prj_cfg.csv_template" to insert Azure storage account and key and upload it as "prj_cfg.csv" to "dbfs:/FileStore/config/prj_cfg.csv"
-2. Compile application jar or download it from releases and upload it to "dbfs:/FileStore/jars/airbnb-etl_2.12-1.0.jar"
-3. Copy the [airflow/dags/airbnb-databricks.py](airflow/dags/airbnb-databricks.py) to your $AIRFLOW_HOME/dags/ folder. 
+1. Edit [`config/prj_cfg.csv.template`](config/prj_cfg.csv.template) to insert Azure storage account and key and upload it as to Databricks as `dbfs:/FileStore/config/prj_cfg.csv`
+2. Compile application jar by using sbt (tested with version 1.5.5) by running in terminal `$ sbt package` in [`scala/`](scala/) folder and upload it to `dbfs:/FileStore/jars/airbnb-etl_2.12-1.0.jar`
+3. Copy the [`airflow/dags/airbnb-databricks.py`](airflow/dags/airbnb-databricks.py) to your `$AIRFLOW_HOME/dags/` folder. 
 4. Run airflow webserver and scheduler
 
 ## Exploring the data with Databricks SQL
