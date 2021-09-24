@@ -1,0 +1,79 @@
+-- Averaged Review Count in Selected Cities
+SELECT date::date, city, AVG(count) OVER(PARTITION BY city ORDER BY date::date ASC RANGE BETWEEN 6 PRECEDING AND CURRENT ROW) as count
+FROM
+    (SELECT date, city, count(*) as count
+    FROM reviews
+    LEFT JOIN listings
+    ON listings.listing_id = reviews.listing_id
+    WHERE city in ("Amsterdam", "Berlin", "Paris", "London")
+    AND date >= "2014-01-01"
+    GROUP BY city, date);
+    
+-- Are comments more negative after a rainy period?
+SELECT sentiment, avg(moving_avg_temperature) as average_past_temperature_degC
+FROM 
+    (SELECT sentiment, review_id, reviews.date, rain, city, moving_avg_temperature 
+    FROM reviews
+    JOIN (SELECT *, avg(temperature) over (partition by weather.city order by weather.date, weather.date ROWS 7 PRECEDING ) as moving_avg_temperature
+          FROM weather) as subq   
+    USING (weather_id)    
+    ORDER BY reviews.date) as reviews_weather
+WHERE sentiment in ('pos','neg')
+GROUP BY sentiment
+ORDER BY average_past_temperature_degC DESC;
+
+-- Are comments more negative after a rainy period?
+SELECT sentiment, avg(cumsum_rain) as average_past_rain_mm
+FROM 
+    (SELECT sentiment, review_id, reviews.date, rain, city, cumsum_rain 
+    FROM reviews
+    JOIN (SELECT *, sum(rain) over (partition by weather.city order by weather.date, weather.date ROWS 3 PRECEDING ) as cumsum_rain
+          FROM weather) as subq   
+    USING (weather_id)    
+    ORDER BY reviews.date) as reviews_weather
+WHERE sentiment in ('pos','neg')
+GROUP BY sentiment
+ORDER BY average_past_rain_mm DESC;
+
+-- Are all reviews in English?
+SELECT comment_language, 100*count(*)::decimal/(SELECT count(*)
+                                  FROM reviews) as share_perc
+FROM reviews
+GROUP BY comment_language
+ORDER BY share_perc DESC
+LIMIT 5;
+
+-- Are there hosts with listings in multiple cities?
+SELECT host_id, host_name, host_location, count(*) as count
+FROM
+    (SELECT host_id, host_name, host_location, city
+    FROM hosts
+    JOIN listings
+    USING (host_id)    
+    GROUP BY host_id, host_name, host_location, city)
+GROUP BY host_id, host_name, host_location
+ORDER BY count DESC
+LIMIT 5;
+
+-- How many guests visited more than one city?
+SELECT cities_visited, count(*) as count
+FROM (
+    SELECT reviewer_id, count(*) as cities_visited
+    FROM
+        (SELECT reviewer_id, city
+        FROM reviews
+        JOIN listings
+        ON reviews.listing_id = listings.listing_id
+        GROUP BY reviewer_id, city)
+    GROUP BY reviewer_id
+    ORDER BY cities_visited DESC
+    )
+GROUP BY cities_visited
+ORDER by count ASC;
+
+-- Are there more positive or negative reviews of Airbnb stays?
+SELECT sentiment, count(*)::decimal/(SELECT COUNT(*) FROM reviews WHERE sentiment in ('pos','neg')) as share_perc
+FROM reviews
+WHERE sentiment in ('pos','neg')
+GROUP BY sentiment
+
