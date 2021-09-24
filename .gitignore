@@ -5,3 +5,4 @@ data/
 /project
 config/prj_cfg.csv
 config/prj_cfg_local.txt
+/results
