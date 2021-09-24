@@ -164,43 +164,10 @@ Works with Python 3.8.5, Airflow 2.1.3 with two provider packages: `databricks` 
 
 Note: Main focus of this project is the ETL pipeline toolchain. NLP algorithms such as language detection and sentiment analysis are included for demonstration only. Language detection appears to have worked quite well, but it is far from perfect. Quality of sentiment analysis is poor at best. Do not make any conclusions from the query results of the final model. 
 
-See the queries in [docs/dashboard.png](docs/dashboard.png)
+Impact of COVID-19 pandemic is clearly visible in daily review count:
+![docs/review_count.png](docs/review_count.png)
 
-[docs/review_count.png](docs/review_count.png)
+Databricks SQL simple dashboard:
+![docs/dashboard.png](docs/dashboard.png)
 
-Are there more positive or negative reviews of Airbnb stays?
-- About 97% of reviews were detected positive, while about 3% negative.
-
-Are review comments more negative when weather is bad? 
-- The results suggest that weather does not strongly influence sentiment of the comments. Actually the average temperature was a bit higher and rainfall lower when comments are negative. If there is any relationship between weather and sentiment its hidden deeper in the data.
-
-Are all reviews in English?
-- About 72% of comments are in English, followed by French 13% and German 4.6%.
-
-Are there hosts with listings in multiple cities?
-- There is a host with listings in 135 cities and many other hosts with listings in dozens of cities.
-
-How many guests visited more than one city?
-Looking at Amsterdam, Paris, London and Berlin, most guest stayed with Airbnb in just one of the cities, just 319 visited them all.
-
-|cities_visited |	count|
-|--|--|
-|4 | 	319|
-|3 |	7525|
-|2 |	132009|
-|1 |	2648593|
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
+You can download the queries [here](sql/queries.txt)
