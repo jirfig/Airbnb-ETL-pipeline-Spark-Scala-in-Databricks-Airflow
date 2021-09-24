@@ -11,7 +11,7 @@ This project is an extension to [Airbnb ETL pipeline: Spark on EMR, Redshift & A
 - [Dimensional model](#dimensional-model)
 - [Source data](#source-data)
 - [ETL pipeline](#etl-pipeline)
-- [Exploring the data with Databricks SQL](#exploring-the-data-with-Databricks-SQL)
+- [Exploring the data with Databricks SQL](#exploring-the-data-with-databricks-sql)
 
 
 ## Dimensional model
@@ -72,7 +72,7 @@ My usage of Inside Airbnb's data does not align perfectly with their mission, I 
 
 Total size of the source data is 5.8 GB, total number of records ~14.7 million. However, many of the records are duplicates.
 
-Use [get_original_data.ipynb](get_original_data.ipynb) to download the data.
+Use [`get_original_data.ipynb`](get_original_data.ipynb) to download the data.
 
 ## ETL pipeline
 
@@ -110,7 +110,7 @@ process_reviews_submit = DatabricksSubmitRunOperator(
 
 ![](docs/dag_complete.png)
 
-Alternatively, Databricks notebook [`etl_notebooks/Airbnb-etl-notebook.scala`](etl_notebooks/Airbnb-etl-notebook.scala) can be uploaded to Databricks and directly executed cell-by-cell. It contains identical code as in [`scala/`](scala), but requires manual execution, scheduling and verification of results.
+Alternatively, Databricks notebook [`etl-notebooks/Airbnb_etl_notebook.scala`](etl-notebooks/Airbnb_etl_notebook.scala) can be uploaded to Databricks and directly executed cell-by-cell. It contains identical code as in [`scala/`](scala), but requires manual execution, scheduling and verification of results.
 							
 ### Example runtime:
 - Creating dimensional model from scratch using January 2021 monthly data.
@@ -130,7 +130,7 @@ Alternatively, Databricks notebook [`etl_notebooks/Airbnb-etl-notebook.scala`](e
 ## How to run the project
 1. Download source data using [`get_original_data.ipynb`](get_original_data.ipynb)
 2. Create Azure storage account and get a connection string.
-3. Edit [`config/prj_cfg.txt.template`](config/prj_cfg.txt.template) to insert Azure storage account connection string and save it as `config/prj_cfg.txt`
+3. Edit [`config/prj_cfg_local.txt.template`](config/prj_cfg_local.txt.template) to insert Azure storage account connection string and save it as `config/prj_cfg_local.txt`
 4. Create new containers in Azure Blob Storage and upload raw data using [`file_operations_azure_blob_storage.ipynb`](file_operations_azure_blob_storage.ipynb)
 
 Local jupyter notebooks are tested with Python 3.8.5 and azure-storage-blob 12.8.1.
@@ -149,7 +149,7 @@ dbutils.secrets.get(scope = <scope_name>, key = <key>)
 - `com.johnsnowlabs.nlp:spark-nlp_2.12:3.2.2` (necessary to run language detection and sentiment analysis)
 - `azure-storage-blob` (necessary to move files between Azure containers)
 
-4. Import the Scala source notebooks to Databricks and run interactively [`etl_notebooks/Airbnb-etl-notebook.scala`](etl_notebooks/Airbnb-etl-notebook.scala) and test the results using [`etl_notebooks/Airbnb-test-notebook.scala`](etl_notebooks/Airbnb-test-notebook.scala)
+4. Import the Scala source notebooks to Databricks and run interactively [`etl-notebooks/Airbnb_etl_notebook.scala`](etl-notebooks/Airbnb_etl_notebook.scala) and test the results using [`etl-notebooks/Airbnb_test_notebook.scala`](etl-notebooks/Airbnb_test_notebook.scala)
 
 
 ### 2. Airflow
